@@ -27,7 +27,8 @@ int lock_delay = 5000; //change the delay from here
 
 void setup()  
 {
-    myservo.attach(9);
+    myservo.attach(8);
+    pinMode(2,INPUT);
 //  pinMode(door_lock, OUTPUT);
 //  digitalWrite(door_lock, LOW);
     Serial.begin(9600);
@@ -38,6 +39,28 @@ void loop()
 {
   getFingerprintIDez();
   delay(50);
+
+//Tombol
+{
+  if(digitalRead(2)==HIGH){
+    myservo.attach(9);
+  for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees   
+  myservo.write(pos);
+  delay(lock_delay);
+//  digitalWrite(door_lock, LOW);
+  for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+  myservo.write(pos);              // tell servo to go to position in variable 'pos'
+  delay(lock_delay);
+  myservo.detach();
+  return finger.fingerID;
+    }
+  }
+  }
+  else
+    
+ myservo.write(0);
+
+}
 }
 
 uint8_t getFingerprintID() {
