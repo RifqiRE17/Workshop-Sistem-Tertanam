@@ -25,43 +25,140 @@ Adafruit_Fingerprint finger = Adafruit_Fingerprint(&mySerial);
 //int door_lock = 9; //connect the door lock to pin 12
 int lock_delay = 5000; //change the delay from here
 
+boolean endOfSerie = 0;
+String serie = "";
+float pressLength_milliSeconds = 0;
+unsigned long releaseMoment = 0;
+
+int shortPush = 200;
+int longPush = 2000;
+int breakofLength = 2000;
+
+int buttonPin = 2;
+
 void setup()  
 {
-    myservo.attach(8);
-    pinMode(2,INPUT);
+    myservo.attach(9);
+    pinMode(buttonPin, INPUT_PULLUP); 
 //  pinMode(door_lock, OUTPUT);
 //  digitalWrite(door_lock, LOW);
     Serial.begin(9600);
     finger.begin(57600);
   }
 
-void loop()
+void loop() {
+
+  if (endOfSerie == 0) // If there is not yet a finished series of pushes continue or start recording.
+  {
+    // Record serie of pushes
+    while (digitalRead(buttonPin) == HIGH ){ 
+  
+      delay(100);  //if you want more resolution, lower this number 
+      pressLength_milliSeconds = pressLength_milliSeconds + 100;   
+  
+      //display how long button is has been held
+      Serial.print("ms = ");
+      Serial.println(pressLength_milliSeconds);
+      releaseMoment = millis();
+    }//close while record length of push
+
+    if (pressLength_milliSeconds > longPush)
+    {
+      serie = serie + "L";
+      pressLength_milliSeconds = 0;
+
+      myservo.attach(9);
+      for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees   
+      myservo.write(pos);
+      delay(lock_delay); 
+      myservo.detach();
+      return finger.fingerID;
+      }
+    }
+    else if (pressLength_milliSeconds > shortPush)
+    {
+      serie = serie + "S";
+      pressLength_milliSeconds = 0;
+
+      myservo.attach(9);
+      for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+      myservo.write(pos);              // tell servo to go to position in variable 'pos'
+      delay(lock_delay);
+      myservo.detach();
+      return finger.fingerID;
+    }
+   }
+    
+    if (releaseMoment != 0 && releaseMoment + breakofLength < millis()) // if pause between pushes is longer then afbreekLengte, end of Serie is reached
+    {
+      releaseMoment = 0;
+      endOfSerie = 1;
+    }
+  } // end of series recording
+
+  else
+  { // execution, because series of pushes has ended
+    Serial.println ("Uitvoering");
+    Serial.println (serie);
+      
+    }
+
+    serie = ""; // reset push series
+    endOfSerie = 0; // allow start of recording new series
+
 {
   getFingerprintIDez();
   delay(50);
+}
+
+} // end of execution
+
+
+
 
 //Tombol
-{
-  if(digitalRead(2)==HIGH){
-    myservo.attach(9);
-  for (pos = 0; pos <= 180; pos += 1) { // goes from 0 degrees to 180 degrees   
-  myservo.write(pos);
-  delay(lock_delay);
-//  digitalWrite(door_lock, LOW);
-  for (pos = 180; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
-  myservo.write(pos);              // tell servo to go to position in variable 'pos'
-  delay(lock_delay);
-  myservo.detach();
-  return finger.fingerID;
-    }
-  }
-  }
-  else
+//{
+//  if(digitalRead(2)==HIGH){
+//  myservo.attach(9);
+//  for (pos = 0; pos <= 360; pos += 1) { // goes from 0 degrees to 180 degrees   
+//  myservo.write(pos);
+//  delay(lock_delay);
+//  myservo.detach();
+//  return finger.fingerID;
+////  return finger.fingerID;
+//  }
+//  }
+//  if(digitalRead(2)==HIGH){
+//  myservo.attach(9);
+//  for (pos = 360; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+//  myservo.write(pos);              // tell servo to go to position in variable 'pos'
+//  delay(lock_delay);
+//  myservo.detach();
+//  return finger.fingerID;
     
- myservo.write(0);
+    
 
-}
-}
+  
+//  if(digitalRead(2)==HIGH){
+//    myservo.attach(9);
+//  for (pos = 0; pos <= 360; pos += 1) { // goes from 0 degrees to 180 degrees   
+//  myservo.write(pos);
+//  delay(lock_delay);
+////  digitalWrite(door_lock, LOW);
+//  for (pos = 360; pos >= 0; pos -= 1) { // goes from 180 degrees to 0 degrees
+//  myservo.write(pos);              // tell servo to go to position in variable 'pos'
+//  delay(lock_delay);
+//  myservo.detach();
+//  return finger.fingerID;
+//    }
+//  }
+//  }
+// 
+
+//}
+//}
+
+
 
 uint8_t getFingerprintID() {
   uint8_t p = finger.getImage();
